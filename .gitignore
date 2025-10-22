@@ -44,3 +44,36 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android related
+.gradle/
+local.properties
+**/captures/
+**/gradle-wrapper.jar
+**/app/*.keystore
+**/app/*.jks
+**/app/release/
+
+# iOS related
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.podspec
+*.xcuserstate
+
+# Windows related
+windows/flutter/ephemeral/
+
+# macOS related
+macos/Flutter/ephemeral/
+
+# VS Code related
+.vscode/
+
+# Logs / temp
+*.tmp
+*.bak
+*.log
+.DS_Store
+Thumbs.db
