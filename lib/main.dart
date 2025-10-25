@@ -1,190 +1,116 @@
 import 'package:flutter/material.dart';
+import 'models/app_config.dart';
+import 'screens/chat_screen.dart';
+import 'screens/character_screen.dart';
+import 'screens/store_screen.dart';
+import 'screens/settings_screen.dart';
 
-void main() {
-  runApp(const UrWaifuApp());
+void main() => runApp(const UrWaifuApp());
+
+class AppController {
+  final ValueNotifier<AppConfig> config = ValueNotifier<AppConfig>(AppConfig());
+  final ValueNotifier<ThemeMode> themeMode =
+      ValueNotifier<ThemeMode>(ThemeMode.light);
+
+  // Temayı değiştir
+  void toggleTheme() {
+    themeMode.value =
+        themeMode.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+  }
+
+  // Yapılandırmayı bütün olarak güncelle
+  void updateConfig(AppConfig newConfig) {
+    config.value = newConfig;
+  }
+
+  // Parayı güncelle
+  void addCoins(int amount) {
+    final c = config.value;
+    updateConfig(c.copyWith(coins: (c.coins + amount).clamp(0, 999999)));
+  }
+
+  // Mağaza satın alma
+  void purchase(String sku, int price) {
+    final c = config.value;
+    if (c.ownedSkus.contains(sku)) return;
+    if (c.coins < price) return;
+    final newOwned = List<String>.from(c.ownedSkus)..add(sku);
+    updateConfig(c.copyWith(coins: c.coins - price, ownedSkus: newOwned));
+  }
 }
 
-class UrWaifuApp extends StatelessWidget {
+class UrWaifuApp extends StatefulWidget {
   const UrWaifuApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'urWaifu 💕',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.pinkAccent),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
-    );
-  }
+  State<UrWaifuApp> createState() => _UrWaifuAppState();
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class _UrWaifuAppState extends State<UrWaifuApp> {
+  final AppController controller = AppController();
+  int _currentIndex = 0;
+
+  late List<Widget> _screens;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.pink[50],
-      appBar: AppBar(
-        title: const Text(
-          'urWaifu 💕',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.pinkAccent,
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircleAvatar(
-              radius: 70,
-              backgroundImage: AssetImage('assets/images/waifu_default.png'),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Hey darling 💖',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pinkAccent,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ChatScreen()),
-                );
-              },
-              icon: const Icon(Icons.chat_bubble, color: Colors.white),
-              label: const Text(
-                'Chat with your Waifu',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
-
-  @override
-  State<ChatScreen> createState() => _ChatScreenState();
-}
-
-class _ChatScreenState extends State<ChatScreen> {
-  final List<Map<String, String>> _messages = [];
-  final TextEditingController _controller = TextEditingController();
-
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      _messages.add({'sender': 'user', 'text': text});
-    });
-    _controller.clear();
-
-    // Simulate AI response
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        _messages.add({
-          'sender': 'waifu',
-          'text': _generateResponse(text),
-        });
-      });
-    });
-  }
-
-  String _generateResponse(String input) {
-    if (input.toLowerCase().contains('hello') || input.toLowerCase().contains('hi')) {
-      return "Hiii 💞 I missed you!";
-    } else if (input.toLowerCase().contains('love')) {
-      return "Aww... I love you too 😳💗";
-    } else {
-      return "You're so cute when you talk to me 💕";
-    }
+  void initState() {
+    super.initState();
+    _screens = [
+      ChatScreen(controller: controller),
+      CharacterScreen(controller: controller),
+      StoreScreen(controller: controller),
+      SettingsScreen(controller: controller),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat 💬'),
-        backgroundColor: Colors.pinkAccent,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(10),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isUser = msg['sender'] == 'user';
-                return Align(
-                  alignment:
-                      isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isUser
-                          ? Colors.pinkAccent
-                          : Colors.pinkAccent.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      msg['text']!,
-                      style: TextStyle(
-                        color: isUser ? Colors.white : Colors.black,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: controller.themeMode,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          title: 'urWaifu 💕',
+          debugShowCheckedModeBanner: false,
+          themeMode: mode,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.pinkAccent),
+            useMaterial3: true,
+            scaffoldBackgroundColor: Colors.grey[100],
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.pinkAccent,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+          ),
+          home: Scaffold(
+            body: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: _screens[_currentIndex],
+            ),
+            bottomNavigationBar: ValueListenableBuilder<AppConfig>(
+              valueListenable: controller.config,
+              builder: (context, cfg, _) {
+                return NavigationBar(
+                  selectedIndex: _currentIndex,
+                  onDestinationSelected: (i) => setState(() => _currentIndex = i),
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+                    NavigationDestination(
+                      icon: Icon(Icons.face_retouching_natural), label: 'Character'),
+                    NavigationDestination(
+                      icon: Icon(Icons.storefront_outlined), label: 'Store'),
+                    NavigationDestination(
+                      icon: Icon(Icons.settings_outlined), label: 'Settings'),
+                  ],
                 );
               },
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            color: Colors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: "Type something sweet 💌...",
-                      border: OutlineInputBorder(),
-                    ),
-                    onSubmitted: (_) => _sendMessage(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.send, color: Colors.pinkAccent),
-                  onPressed: _sendMessage,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
