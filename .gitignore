@@ -77,3 +77,4 @@ macos/Flutter/ephemeral/
 *.log
 .DS_Store
 Thumbs.db
+config.env

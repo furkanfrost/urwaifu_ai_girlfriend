@@ -4,36 +4,51 @@ import 'screens/chat_screen.dart';
 import 'screens/character_screen.dart';
 import 'screens/store_screen.dart';
 import 'screens/settings_screen.dart';
+import 'dart:io';
 
-void main() => runApp(const UrWaifuApp());
+String? globalGroqKey;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final envFile = File("C:/Users/furka/Documents/urwaifu_ai_girlfriend/config.env");
+  if (!await envFile.exists()) {
+    debugPrint("❌ Config file not found at ${envFile.path}");
+  } else {
+    final lines = await envFile.readAsLines();
+    for (final line in lines) {
+      if (line.startsWith("GROQ_API_KEY=")) {
+        globalGroqKey = line.split("=")[1].trim();
+        debugPrint("✅ Loaded key: ${globalGroqKey?.substring(0, 8)}********");
+      }
+    }
+  }
+
+  runApp(const UrWaifuApp());
+}
+
+
 
 class AppController {
   final ValueNotifier<AppConfig> config = ValueNotifier<AppConfig>(AppConfig());
-  final ValueNotifier<ThemeMode> themeMode =
-      ValueNotifier<ThemeMode>(ThemeMode.light);
+  final ValueNotifier<ThemeMode> themeMode = ValueNotifier(ThemeMode.light);
 
-  // Temayı değiştir
   void toggleTheme() {
     themeMode.value =
         themeMode.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
   }
 
-  // Yapılandırmayı bütün olarak güncelle
-  void updateConfig(AppConfig newConfig) {
-    config.value = newConfig;
-  }
+  void updateConfig(AppConfig newConfig) => config.value = newConfig;
 
-  // Parayı güncelle
   void addCoins(int amount) {
     final c = config.value;
-    updateConfig(c.copyWith(coins: (c.coins + amount).clamp(0, 999999)));
+    final newCoins = (c.coins + amount).clamp(0, 999999);
+    updateConfig(c.copyWith(coins: newCoins));
   }
 
-  // Mağaza satın alma
   void purchase(String sku, int price) {
     final c = config.value;
-    if (c.ownedSkus.contains(sku)) return;
-    if (c.coins < price) return;
+    if (c.ownedSkus.contains(sku) || c.coins < price) return;
     final newOwned = List<String>.from(c.ownedSkus)..add(sku);
     updateConfig(c.copyWith(coins: c.coins - price, ownedSkus: newOwned));
   }
@@ -69,8 +84,8 @@ class _UrWaifuAppState extends State<UrWaifuApp> {
       valueListenable: controller.themeMode,
       builder: (context, mode, _) {
         return MaterialApp(
-          title: 'urWaifu 💕',
           debugShowCheckedModeBanner: false,
+          title: 'urWaifu 💕',
           themeMode: mode,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.pinkAccent),
@@ -89,24 +104,21 @@ class _UrWaifuAppState extends State<UrWaifuApp> {
               duration: const Duration(milliseconds: 250),
               child: _screens[_currentIndex],
             ),
-            bottomNavigationBar: ValueListenableBuilder<AppConfig>(
-              valueListenable: controller.config,
-              builder: (context, cfg, _) {
-                return NavigationBar(
-                  selectedIndex: _currentIndex,
-                  onDestinationSelected: (i) => setState(() => _currentIndex = i),
-                  destinations: const [
-                    NavigationDestination(
-                      icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
-                    NavigationDestination(
-                      icon: Icon(Icons.face_retouching_natural), label: 'Character'),
-                    NavigationDestination(
-                      icon: Icon(Icons.storefront_outlined), label: 'Store'),
-                    NavigationDestination(
-                      icon: Icon(Icons.settings_outlined), label: 'Settings'),
-                  ],
-                );
-              },
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (i) =>
+                  setState(() => _currentIndex = i),
+              destinations: const [
+                NavigationDestination(
+                    icon: Icon(Icons.chat_bubble_outline), label: 'Chat'),
+                NavigationDestination(
+                    icon: Icon(Icons.face_retouching_natural),
+                    label: 'Character'),
+                NavigationDestination(
+                    icon: Icon(Icons.storefront_outlined), label: 'Store'),
+                NavigationDestination(
+                    icon: Icon(Icons.settings_outlined), label: 'Settings'),
+              ],
             ),
           ),
         );

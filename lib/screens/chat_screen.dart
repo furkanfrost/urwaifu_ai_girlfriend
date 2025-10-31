@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../main.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+import '../main.dart'; 
 
 class ChatScreen extends StatefulWidget {
   final AppController controller;
@@ -15,7 +18,54 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   bool _isTyping = false;
 
-  void _sendMessage() {
+  Future<String> _fetchGroqResponse(String prompt) async {
+    if (globalGroqKey == null || globalGroqKey!.isEmpty) {
+      return "Missing API key 😢";
+    }
+
+    const model = "llama-3.1-8b-instant";
+    final url = Uri.parse("https://api.groq.com/openai/v1/chat/completions");
+
+    try {
+      print("🧠 Using key: ${globalGroqKey!.substring(0, 8)}********");
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $globalGroqKey",
+        },
+        body: jsonEncode({
+          "model": model,
+          "messages": [
+            {
+              "role": "system",
+              "content":
+                  "You are Yuki 💕 — a warm, affectionate anime girlfriend. Speak lovingly and naturally to your darling."
+            },
+            {"role": "user", "content": prompt}
+          ],
+          "temperature": 0.8,
+        }),
+      );
+
+      print("Groq status: ${response.statusCode}");
+      print("Groq body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data["choices"][0]["message"]["content"] ??
+            "I can’t think right now 💕";
+      } else {
+        return "Hmm... something went wrong 😢 [${response.statusCode}]";
+      }
+    } catch (e) {
+      print("Groq Network Error: $e");
+      return "Network error 😔 Please check your internet connection.";
+    }
+  }
+
+  Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
@@ -25,26 +75,13 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _controller.clear();
 
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        _messages.add({
-          'sender': 'waifu',
-          'text': _generateResponse(text),
-        });
-        _isTyping = false;
-      });
-    });
-  }
+    final aiReply = await _fetchGroqResponse(text);
 
-  String _generateResponse(String input) {
-    if (input.toLowerCase().contains('hello') ||
-        input.toLowerCase().contains('hi')) {
-      return "Hiii 💞 I missed you!";
-    } else if (input.toLowerCase().contains('love')) {
-      return "Aww... I love you too 😳💗";
-    } else {
-      return "You're so cute when you talk to me 💕";
-    }
+    if (!mounted) return;
+    setState(() {
+      _messages.add({'sender': 'waifu', 'text': aiReply});
+      _isTyping = false;
+    });
   }
 
   @override
@@ -121,7 +158,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     alignment: Alignment.centerLeft,
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Text("..."),
+                      child: Text(
+                        "...",
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.pinkAccent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   );
                 }
@@ -138,13 +182,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: BoxDecoration(
                       color: isUser
                           ? Colors.pinkAccent
-                          : Colors.pinkAccent.withOpacity(0.2),
+                          : Colors.pinkAccent.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       msg['text']!,
                       style: TextStyle(
-                        color: isUser ? Colors.white : Colors.black,
+                        color: isUser ? Colors.white : Colors.black87,
                         fontSize: 16,
                       ),
                     ),
@@ -163,9 +207,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     controller: _controller,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _sendMessage(),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: "Type something sweet 💌...",
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
                 ),
