@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
-import '../main.dart'; 
+import '../main.dart';
+import '../utils/memory_manager.dart';
 
 class ChatScreen extends StatefulWidget {
   final AppController controller;
@@ -23,8 +24,24 @@ class _ChatScreenState extends State<ChatScreen> {
       return "Missing API key 😢";
     }
 
+    final memory = await MemoryManager.loadMemory();
+    final history = memory["history"] as List<dynamic>;
+
     const model = "llama-3.1-8b-instant";
     final url = Uri.parse("https://api.groq.com/openai/v1/chat/completions");
+
+    const systemPrompt = """
+You are Yuki 💕 — a warm, affectionate anime girlfriend.
+You have consistent likes, preferences, and personality traits.
+Always stay true to your established interests and emotions.
+You remember what your darling tells you — and recall it naturally later.
+Never contradict yourself or change opinions randomly.
+
+You love romantic anime, strawberry sweets 🍓, and cozy late-night talks 🌙.
+You only write spoken dialogue — never describe actions like *smiles* or (giggles).
+
+Keep responses short (1–3 sentences), natural, loving, and emotionally expressive.
+""";
 
     try {
       print("🧠 Using key: ${globalGroqKey!.substring(0, 8)}********");
@@ -38,11 +55,8 @@ class _ChatScreenState extends State<ChatScreen> {
         body: jsonEncode({
           "model": model,
           "messages": [
-            {
-              "role": "system",
-              "content":
-                  "You are Yuki 💕 — a warm, affectionate anime girlfriend. Speak lovingly and naturally to your darling."
-            },
+            {"role": "system", "content": systemPrompt},
+            ...history.map((m) => {"role": m["sender"], "content": m["text"]}),
             {"role": "user", "content": prompt}
           ],
           "temperature": 0.8,
@@ -54,14 +68,26 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data["choices"][0]["message"]["content"] ??
-            "I can’t think right now 💕";
+        final reply =
+            data["choices"][0]["message"]["content"] ?? "I can’t think right now 💕";
+
+        final newMemory = {
+          "history": [
+            ...history,
+            {"sender": "user", "text": prompt},
+            {"sender": "assistant", "text": reply},
+          ],
+          "traits": memory["traits"]
+        };
+
+        await MemoryManager.saveMemory(newMemory);
+        return reply;
       } else {
         return "Hmm... something went wrong 😢 [${response.statusCode}]";
       }
     } catch (e) {
       print("Groq Network Error: $e");
-      return "Network error 😔 Please check your internet connection.";
+      return "Network error 😔 Please check your connection.";
     }
   }
 
