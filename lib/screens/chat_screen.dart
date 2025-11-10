@@ -4,6 +4,12 @@ import 'dart:convert';
 import 'dart:io';
 import '../main.dart';
 import '../utils/memory_manager.dart';
+import '../widgets/message_bubble.dart';
+import '../widgets/typing_bubble.dart';
+import '../widgets/avatar.dart';
+import '../models/app_config.dart';
+
+
 
 class ChatScreen extends StatefulWidget {
   final AppController controller;
@@ -17,7 +23,27 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _inChat = false;
   final List<Map<String, String>> _messages = [];
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   Future<String> _fetchGroqResponse(String prompt) async {
     if (globalGroqKey == null || globalGroqKey!.isEmpty) {
@@ -100,6 +126,7 @@ Keep responses short (1–3 sentences), natural, loving, and emotionally express
       _isTyping = true;
     });
     _controller.clear();
+    _scrollToBottom();
 
     final aiReply = await _fetchGroqResponse(text);
 
@@ -108,6 +135,7 @@ Keep responses short (1–3 sentences), natural, loving, and emotionally express
       _messages.add({'sender': 'waifu', 'text': aiReply});
       _isTyping = false;
     });
+    _scrollToBottom();
   }
 
   @override
@@ -116,141 +144,352 @@ Keep responses short (1–3 sentences), natural, loving, and emotionally express
   }
 
   Widget _buildHomeUI() {
-    return Scaffold(
-      backgroundColor: Colors.pink[50],
-      appBar: AppBar(
-        title: const Text(
-          'urWaifu 💕',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.pinkAccent,
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircleAvatar(
-              radius: 70,
-              backgroundImage: AssetImage('assets/images/waifu_default.png'),
+    return ValueListenableBuilder<AppConfig>(
+      valueListenable: widget.controller.config,
+      builder: (context, config, _) {
+        return Scaffold(
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.pinkAccent.withOpacity(0.1),
+                  Colors.purpleAccent.withOpacity(0.1),
+                  Colors.blueAccent.withOpacity(0.05),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'Hey darling 💖',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pinkAccent,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+            child: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.pinkAccent.withOpacity(0.3),
+                              blurRadius: 30,
+                              spreadRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 80,
+                          backgroundImage: AssetImage(config.avatarPath),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Text(
+                        'Hey ${config.waifuName} 💖',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Ready to chat?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.pinkAccent,
+                              Colors.purpleAccent,
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.pinkAccent.withOpacity(0.4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 18),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          onPressed: () => setState(() => _inChat = true),
+                          icon: const Icon(Icons.chat_bubble, 
+                              color: Colors.white, size: 28),
+                          label: const Text(
+                            'Start Chatting',
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              onPressed: () => setState(() => _inChat = true),
-              icon: const Icon(Icons.chat_bubble, color: Colors.white),
-              label: const Text(
-                'Chat with your Waifu',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildChatUI() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat 💬'),
-        backgroundColor: Colors.pinkAccent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => setState(() => _inChat = false),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(10),
-              itemCount: _messages.length + (_isTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isTyping && index == _messages.length) {
-                  return const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        "...",
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.pinkAccent,
-                          fontWeight: FontWeight.w600,
-                        ),
+    return ValueListenableBuilder<AppConfig>(
+      valueListenable: widget.controller.config,
+      builder: (context, config, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Avatar(path: config.avatarPath, radius: 20),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      config.waifuName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                  );
-                }
-
-                final msg = _messages[index];
-                final isUser = msg['sender'] == 'user';
-                return Align(
-                  alignment:
-                      isUser ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isUser
-                          ? Colors.pinkAccent
-                          : Colors.pinkAccent.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      msg['text']!,
+                    Text(
+                      _isTyping ? 'typing...' : 'online',
                       style: TextStyle(
-                        color: isUser ? Colors.white : Colors.black87,
-                        fontSize: 16,
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                        color: _isTyping 
+                            ? Colors.white.withOpacity(0.8)
+                            : Colors.green.shade300,
                       ),
                     ),
-                  ),
-                );
-              },
+                  ],
+                ),
+              ],
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => setState(() => _inChat = false),
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.pinkAccent,
+                    Colors.purpleAccent,
+                  ],
+                ),
+              ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            color: Colors.white,
-            child: Row(
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.pinkAccent.withOpacity(0.05),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: Column(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(),
-                    decoration: InputDecoration(
-                      hintText: "Type something sweet 💌...",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  child: _messages.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Avatar(path: config.avatarPath, radius: 50),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Start chatting with ${config.waifuName} 💕',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          reverse: false,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          itemCount: _messages.length + (_isTyping ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (_isTyping && index == _messages.length) {
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                    left: 50, top: 8, bottom: 8),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Avatar(path: config.avatarPath, radius: 16),
+                                    const SizedBox(width: 8),
+                                    const TypingBubble(),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            final msg = _messages[index];
+                            final isUser = msg['sender'] == 'user';
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                mainAxisAlignment: isUser
+                                    ? MainAxisAlignment.end
+                                    : MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (!isUser) ...[
+                                    Avatar(path: config.avatarPath, radius: 16),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Flexible(
+                                    child: MessageBubble(
+                                      text: msg['text']!,
+                                      isUser: isUser,
+                                    ),
+                                  ),
+                                  if (isUser) ...[
+                                    const SizedBox(width: 8),
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: Colors.pinkAccent,
+                                      child: const Icon(
+                                        Icons.person,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
                       ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).inputDecorationTheme.fillColor,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: _controller,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => _sendMessage(),
+                              maxLines: null,
+                              textCapitalization: TextCapitalization.sentences,
+                              decoration: InputDecoration(
+                                hintText: "Type something sweet 💌...",
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
+                                hintStyle: TextStyle(
+                                  color: Colors.grey[400],
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.pinkAccent,
+                                Colors.purpleAccent,
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.pinkAccent.withOpacity(0.4),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _sendMessage,
+                              borderRadius: BorderRadius.circular(30),
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                child: const Icon(
+                                  Icons.send,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.send, color: Colors.pinkAccent),
-                  onPressed: _sendMessage,
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -8,31 +8,77 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isUser ? Colors.pinkAccent : Colors.white;
-    final fg = isUser ? Colors.white : Colors.black87;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final bg = isUser
+        ? (isDark
+            ? Colors.pinkAccent
+            : Colors.pinkAccent)
+        : (isDark
+            ? const Color(0xFF2C2C2C)
+            : Colors.white);
+    final fg = isUser
+        ? Colors.white
+        : (isDark
+            ? Colors.white
+            : Colors.black87);
 
     return GestureDetector(
       onLongPress: () async {
         await Clipboard.setData(ClipboardData(text: text));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Copied'), duration: Duration(milliseconds: 800)),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text('Copied to clipboard'),
+                ],
+              ),
+              duration: const Duration(milliseconds: 1500),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(isUser ? 20 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 20),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.18),
-              blurRadius: 6,
+              color: isUser
+                  ? Colors.pinkAccent.withOpacity(0.3)
+                  : Colors.black.withOpacity(0.1),
+              blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Text(text, style: TextStyle(color: fg, fontSize: 16)),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: fg,
+            fontSize: 15,
+            height: 1.4,
+            fontWeight: isUser ? FontWeight.w500 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }

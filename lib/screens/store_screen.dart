@@ -36,67 +36,215 @@ class StoreScreen extends StatelessWidget {
       valueListenable: controller.config,
       builder: (context, cfg, _) {
         return Scaffold(
-          appBar: AppBar(
-            title: const Text("Store 🛍️"),
-            centerTitle: true,
-            backgroundColor: Colors.white,
-            elevation: 1,
-            titleTextStyle: const TextStyle(
-              color: Colors.pinkAccent, fontWeight: FontWeight.w600, fontSize: 20),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Chip(
-                  label: Text("${cfg.coins}"),
-                  avatar: const Icon(Icons.monetization_on, color: Colors.amber),
-                  backgroundColor: Colors.amber.withOpacity(0.15),
-                ),
-              )
-            ],
-          ),
-          body: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: .8),
-            itemCount: items.length,
-            itemBuilder: (_, i) {
-              final it = items[i];
-              final owned = cfg.ownedSkus.contains(it.sku);
-              return GestureDetector(
-                onTap: () => _showItemSheet(context, it, owned),
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.asset(it.image, fit: BoxFit.cover, width: double.infinity),
-                        ),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.pinkAccent.withOpacity(0.05),
+                  Colors.purpleAccent.withOpacity(0.05),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 100,
+                  floating: false,
+                  pinned: true,
+                  elevation: 0,
+                  flexibleSpace: FlexibleSpaceBar(
+                    title: const Text(
+                      "Store 🛍️",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          children: [
-                            Text(it.name,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 6),
-                            owned
-                                ? const Text("Owned",
-                                    style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
-                                : Text("${it.price} coins",
-                                    style: const TextStyle(color: Colors.pinkAccent)),
+                    ),
+                    centerTitle: true,
+                    background: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.pinkAccent,
+                            Colors.purpleAccent,
                           ],
                         ),
-                      )
-                    ],
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    Container(
+                      margin: const EdgeInsets.only(right: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.monetization_on, color: Colors.amber, size: 20),
+                          const SizedBox(width: 6),
+                          Text(
+                            "${cfg.coins}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(20),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 0.75,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final it = items[index];
+                        final owned = cfg.ownedSkus.contains(it.sku);
+                        return GestureDetector(
+                          onTap: () => _showItemSheet(context, it, owned),
+                          child: Card(
+                            elevation: owned ? 2 : 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                gradient: owned
+                                    ? LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.green.withOpacity(0.1),
+                                          Colors.greenAccent.withOpacity(0.1),
+                                        ],
+                                      )
+                                    : LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.pinkAccent.withOpacity(0.05),
+                                          Colors.purpleAccent.withOpacity(0.05),
+                                        ],
+                                      ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      margin: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Image.asset(
+                                          it.image,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          it.name,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        owned
+                                            ? Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 12, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green,
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.check_circle,
+                                                      color: Colors.white,
+                                                      size: 16,
+                                                    ),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      "Owned",
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                            : Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.monetization_on,
+                                                    color: Colors.amber,
+                                                    size: 18,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    "${it.price}",
+                                                    style: const TextStyle(
+                                                      color: Colors.pinkAccent,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                        const SizedBox(height: 12),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: items.length,
+                    ),
                   ),
                 ),
-              );
-            },
+              ],
+            ),
           ),
         );
       },
@@ -107,81 +255,212 @@ class StoreScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape:
-          const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(height: 4, width: 40, decoration: BoxDecoration(
-                color: Colors.grey[400], borderRadius: BorderRadius.circular(20))),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(it.image, height: 72, width: 72, fit: BoxFit.cover),
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: 4,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(it.name,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                  ),
-                  if (!owned)
-                    Chip(
-                      label: Text("${it.price}"),
-                      avatar: const Icon(Icons.monetization_on, color: Colors.amber),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(it.description, style: const TextStyle(fontSize: 14)),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.pinkAccent.withOpacity(.5)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text("Close"),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: owned ? Colors.green : Colors.pinkAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          it.image,
+                          height: 80,
+                          width: 80,
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                      onPressed: owned
-                          ? null
-                          : () {
-                              // satın al
-                              Navigator.of(context).pop();
-                              controller.purchase(it.sku, it.price);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("${it.name} purchased 💖"),
-                                  backgroundColor: Colors.pinkAccent,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            it.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (!owned)
+                            Row(
+                              children: [
+                                const Icon(Icons.monetization_on,
+                                    color: Colors.amber, size: 20),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${it.price} coins",
+                                  style: const TextStyle(
+                                    color: Colors.pinkAccent,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
                                 ),
-                              );
-                            },
-                      child: Text(owned ? "Owned" : "Buy"),
+                              ],
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.check_circle,
+                                      color: Colors.white, size: 16),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    "Owned",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  )
-                ],
-              )
-            ],
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    it.description,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey[600],
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(color: Colors.pinkAccent.withOpacity(0.5)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text(
+                          "Close",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: owned
+                              ? null
+                              : LinearGradient(
+                                  colors: [
+                                    Colors.pinkAccent,
+                                    Colors.purpleAccent,
+                                  ],
+                                ),
+                          borderRadius: BorderRadius.circular(16),
+                          color: owned ? Colors.green : null,
+                          boxShadow: owned
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: Colors.pinkAccent.withOpacity(0.4),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                        ),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          onPressed: owned
+                              ? null
+                              : () {
+                                  Navigator.of(context).pop();
+                                  controller.purchase(it.sku, it.price);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.check_circle,
+                                              color: Colors.white),
+                                          const SizedBox(width: 8),
+                                          Text("${it.name} purchased 💖"),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.pinkAccent,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                },
+                          child: Text(
+                            owned ? "Owned ✓" : "Buy Now",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
